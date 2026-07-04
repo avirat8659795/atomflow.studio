@@ -34,13 +34,13 @@ class ChatRequest(BaseModel):
     message: str
 
 # In-memory Global Chat Memory Array Session tracking
-# The SDK mutates this list automatically when running stateful chat instances.
+# Fix: Handled manually inside the route to bypass stateless API resets
 USER_SESSION_CONTEXT = []
 
 # Modernized UI Layout Matrix Document w/ Dynamic Reset Context Operations
 HTML_UI = """
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en)
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -192,7 +192,6 @@ HTML_UI = """
         function clearChatLog() {
             const feed = document.getElementById('chatFeed');
             
-            // Asynchronously dispatch pipeline clear sequence trigger to wipe background context variables
             fetch('/clear', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
@@ -223,7 +222,6 @@ HTML_UI = """
         }
 
         function cleanMarkdownFormatting(text) {
-            // Light, safe structural conversions for list markers, bold frames, and clean paragraph transitions
             let format = text
                 .replace(/\\n/g, '<br>')
                 .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')
@@ -348,7 +346,7 @@ async def chat_endpoint(request: ChatRequest):
     try:
         model_id = 'gemini-2.5-flash'
         
-        # Initialize or catch the continuous context chat loop 
+        # Initialize the stateful chat engine structure using the historical global variable array
         chat = ai_client.chats.create(
             model=model_id,
             history=USER_SESSION_CONTEXT,
@@ -359,6 +357,11 @@ async def chat_endpoint(request: ChatRequest):
         
         # Submit execution message down channels
         response = chat.send_message(final_prompt)
+        
+        # CRITICAL RECONSTRUCTION FIX: Manually append both conversation states into 
+        # the global array structure using official SDK type constraints so memory persists across isolated web requests!
+        USER_SESSION_CONTEXT.append(types.Content(role="user", parts=[types.Part.from_text(text=final_prompt)]))
+        USER_SESSION_CONTEXT.append(types.Content(role="model", parts=[types.Part.from_text(text=response.text)]))
         
         return {"reply": response.text}
         

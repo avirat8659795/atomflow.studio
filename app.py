@@ -345,7 +345,8 @@ def extract_presentation_template(slide_content_markdown: str) -> str:
         if slide.strip():
             # Strips metadata tags if model leaves them around raw text fields
             clean_slide = re.sub(r'```markdown|```', '', slide).strip()
-            slide_sections += f"<section data-markdown><script type='text/template'>\n{clean_slide}\n</script></section>\n"
+            # Direct section loading for proper rendering inside standard iframe elements
+            slide_sections += f"<section data-markdown>\n{clean_slide}\n</section>\n"
 
     template = f"""
     <!doctype html>
@@ -365,6 +366,7 @@ def extract_presentation_template(slide_content_markdown: str) -> str:
         <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/plugin/markdown/markdown.js"></script>
         <script>
+            // Initialize Reveal properly inside the sandboxed environment
             Reveal.initialize({{
                 plugins: [ RevealMarkdown ],
                 controls: true,
@@ -429,7 +431,7 @@ async def chat_endpoint(request: ChatRequest):
     USER_SESSION_CONTEXT.append(types.Content(role="user", parts=content_parts))
 
     try:
-        # Fixed tracking logic loop to prevent system rule resets across cycles
+        # Balanced structural conversation flow processing loop
         response = ai_client.models.generate_content(
             model='gemini-2.5-flash',
             contents=USER_SESSION_CONTEXT,
@@ -449,7 +451,6 @@ async def chat_endpoint(request: ChatRequest):
         return return_data
 
     except Exception as e:
-        # Gracefully handle validation drops by popping invalid content segments out
         if USER_SESSION_CONTEXT:
             USER_SESSION_CONTEXT.pop()
         return {"reply": f"Handshake Error Matrix: {str(e)}"}

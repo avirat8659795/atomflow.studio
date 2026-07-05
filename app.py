@@ -1,12 +1,12 @@
 import os
 import re
 import base64
+import requests
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
-import requests
 from bs4 import BeautifulSoup
 from google import genai
 from google.genai import types
@@ -25,6 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize the Gemini Client securely
 try:
     ai_client = genai.Client()
 except Exception as e:
@@ -35,7 +36,7 @@ class ChatRequest(BaseModel):
     file_data: Optional[str] = None  # Base64 encoded string
     file_mime: Optional[str] = None  # e.g., image/jpeg, image/png, application/pdf
 
-# Holds active thread content pieces safely
+# Global memory bank tracking user thread arrays
 USER_SESSION_CONTEXT = []
 
 HTML_UI = """
@@ -268,6 +269,7 @@ HTML_UI = """
         }
 
         function openPresentationWorkspace(rawSlideCode) {
+            if (!rawSlideCode) return;
             currentPresentationHtml = rawSlideCode;
             const modal = document.getElementById('presentationModal');
             const iframe = document.getElementById('presentationFrame');
@@ -337,16 +339,63 @@ HTML_UI = """
 </html>
 """
 
-def extract_presentation_template(slide_content_markdown: str) -> str:
-    """Wraps generated structural markdown cleanly inside an isolated single-file Reveal.js workspace framework."""
+def extract_presentation_template(raw_llm_markdown: str) -> Optional[str]:
+    """
+    Safely captures slide blocks inside ```slides code structures to prevent 
+    normal markdown descriptions or headers from breaking the iframe layout.
+    """
+    # Look for custom structured slide code-blocks
+    match = re.search(r'```slides\s*(.*?)\n```', raw_llm_markdown, re.DOTALL | re.IGNORECASE)
+    if not match:
+        return None
+        
+    slide_content_markdown = match.group(1)
     raw_slides = slide_content_markdown.split("---")
     slide_sections = ""
+    
     for slide in raw_slides:
         if slide.strip():
-            # Strips metadata tags if model leaves them around raw text fields
-            clean_slide = re.sub(r'```markdown|```', '', slide).strip()
-            # Direct section loading for proper rendering inside standard iframe elements
-            slide_sections += f"<section data-markdown>\n{clean_slide}\n</section>\n"
+            clean_slide = slide.strip()
+            html_lines = []
+            
+            for line in clean_slide.split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+                # Compile structural element definitions safely
+                if line.startswith('### '):
+                    html_lines.append(f"<h3>{line[4:]}</h3>")
+                elif line.startswith('## '):
+                    html_lines.append(f"<h2>{line[3:]}</h2>")
+                elif line.startswith('# '):
+                    html_lines.append(f"<h1>{line[2:]}</h1>")
+                elif line.startswith('* ') or line.startswith('- '):
+                    html_lines.append(f"<li>{line[2:]}</li>")
+                else:
+                    processed_line = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', line)
+                    html_lines.append(f"<p>{processed_line}</p>")
+            
+            # Reconstruct inline lists explicitly
+            final_content = ""
+            in_list = False
+            for item in html_lines:
+                if item.startswith('<li>'):
+                    if not in_list:
+                        final_content += "<ul>"
+                        in_list = True
+                    final_content += item
+                else:
+                    if in_list:
+                        final_content += "</ul>"
+                        in_list = False
+                    final_content += item
+            if in_list:
+                final_content += "</ul>"
+
+            slide_sections += f"<section>\n{final_content}\n</section>\n"
+
+    if not slide_sections:
+        return None
 
     template = f"""
     <!doctype html>
@@ -354,8 +403,13 @@ def extract_presentation_template(slide_content_markdown: str) -> str:
     <head>
         <meta charset="utf-8">
         <title>ATOM-FLOW Engine Presentation</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css">
+        <link rel="stylesheet" href="[https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css](https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css)">
+        <link rel="stylesheet" href="[https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css](https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css)">
+        <style>
+            .reveal h1, .reveal h2, .reveal h3 {{ color: #10b981; font-weight: bold; }}
+            .reveal ul {{ text-align: left; display: inline-block; }}
+            .reveal p {{ color: #cbd5e1; }}
+        </style>
     </head>
     <body>
         <div class="reveal">
@@ -363,12 +417,9 @@ def extract_presentation_template(slide_content_markdown: str) -> str:
                 {slide_sections}
             </div>
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/plugin/markdown/markdown.js"></script>
+        <script src="[https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js](https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js)"></script>
         <script>
-            // Initialize Reveal properly inside the sandboxed environment
             Reveal.initialize({{
-                plugins: [ RevealMarkdown ],
                 controls: true,
                 progress: true,
                 center: true,
@@ -390,19 +441,21 @@ async def chat_endpoint(request: ChatRequest):
     user_prompt = request.message.strip()
     
     if not ai_client:
-        return {"reply": "API Key initialization missing tracking configuration vectors."}
+        return {"reply": "API Key configuration error: System tracking core initialized incorrectly."}
 
     content_parts = []
     
+    # Process multi-modal attachment items gracefully
     if request.file_data and request.file_mime:
         try:
             raw_bytes = base64.b64decode(request.file_data)
             content_parts.append(
                 types.Part.from_bytes(data=raw_bytes, mime_type=request.file_mime)
             )
-        except Exception as e:
-            raise HTTPException(status_code=400, detail="Mime payload sequence corruption.")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Mime payload data processing error.")
 
+    # Contextual URL scraping integration 
     url_pattern = re.compile(r'https?://[^\s]+')
     found_urls = url_pattern.findall(user_prompt)
     if found_urls:
@@ -410,10 +463,11 @@ async def chat_endpoint(request: ChatRequest):
         try:
             res = requests.get(found_urls[0], headers=headers, timeout=10)
             soup = BeautifulSoup(res.text, 'html.parser')
-            for tag in soup(["script", "style"]): tag.decompose()
+            for tag in soup(["script", "style"]): 
+                tag.decompose()
             scraped_text = " ".join(soup.get_text().split())[:3000]
-            user_prompt = f"Scraped Data:\n\"\"\"\n{scraped_text}\n\"\"\"\n\nUser Message: {user_prompt}"
-        except:
+            user_prompt = f"Scraped Context Data:\n\"\"\"\n{scraped_text}\n\"\"\"\n\nUser Message: {user_prompt}"
+        except Exception:
             pass
 
     content_parts.append(types.Part.from_text(text=user_prompt))
@@ -421,39 +475,50 @@ async def chat_endpoint(request: ChatRequest):
     is_presentation_request = any(keyword in user_prompt.lower() for keyword in ["presentation", "slide deck", "create a presentation", "slides"])
 
     system_instruction = (
-        "You are ATOM-FLOW, a professional workspace engineer. "
-        "Always render detailed, helpful responses using clear Markdown. "
-        "CRITICAL: If the user requests a presentation or slide deck, provide a beautiful outline in markdown inside your regular chat text, "
-        "but also ensure each slide block is clearly divided with a '---' separator line so the sub-engine can render it."
+        "You are ATOM-FLOW, a context-aware multi-modal workspace assistant. "
+        "Provide thorough, deep, and beautifully designed markdown responses.\n\n"
+        "CRITICAL FOR PRESENTATIONS/SLIDES:\n"
+        "If the user wants a slide deck or presentation, explain your design choices in standard markdown chat first. "
+        "THEN, provide the presentation block wrapped EXACTLY in a ```slides custom block format. "
+        "Use '---' on a brand new line to separate distinct slides. Example:\n"
+        "```slides\n"
+        "# Slide 1 Title\n"
+        "## Subtitle line\n"
+        "* Point A\n"
+        "* Point B\n"
+        "---\n"
+        "## Slide 2 Title\n"
+        "- Item X\n"
+        "```"
     )
 
-    # Append current input pieces directly to current thread log stack
-    USER_SESSION_CONTEXT.append(types.Content(role="user", parts=content_parts))
+    # Instantiate transient transaction history array to preserve state sanity
+    temp_context = list(USER_SESSION_CONTEXT)
+    temp_context.append(types.Content(role="user", parts=content_parts))
 
     try:
-        # Balanced structural conversation flow processing loop
         response = ai_client.models.generate_content(
             model='gemini-2.5-flash',
-            contents=USER_SESSION_CONTEXT,
+            contents=temp_context,
             config=types.GenerateContentConfig(system_instruction=system_instruction)
         )
         response_text = response.text
 
-        # Track model feedback state
+        # Append execution items to global context thread safely upon transaction success
+        USER_SESSION_CONTEXT.append(types.Content(role="user", parts=content_parts))
         USER_SESSION_CONTEXT.append(types.Content(role="model", parts=[types.Part.from_text(text=response_text)]))
 
         return_data = {"reply": response_text}
 
         if is_presentation_request:
             presentation_html = extract_presentation_template(response_text)
-            return_data["presentation_html"] = presentation_html
+            if presentation_html:
+                return_data["presentation_html"] = presentation_html
 
         return return_data
 
     except Exception as e:
-        if USER_SESSION_CONTEXT:
-            USER_SESSION_CONTEXT.pop()
-        return {"reply": f"Handshake Error Matrix: {str(e)}"}
+        return {"reply": f"Handshake Generation Exception Failure Channel: {str(e)}"}
 
 @app.post("/clear")
 async def clear_context():
@@ -463,4 +528,5 @@ async def clear_context():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), reload=True)
+    # Passing 'app' object reference safely allows standard python execution profiles to run uninterrupted 
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))

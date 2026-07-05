@@ -226,7 +226,6 @@ HTML_UI = """
             }
         }
 
-        // ✅ FIXED: Escaped string template syntax to prevent rendering failure
         function appendMessageRow(text, isUser) {
             const feed = document.getElementById('chatFeed');
             let contentHtml = isUser ? text : marked.parse(text);
@@ -304,7 +303,9 @@ def extract_presentation_template(raw_llm_markdown: str) -> Optional[str]:
                 elif line.startswith('## '): html_lines.append(f"<h2>{line[3:]}</h2>")
                 elif line.startswith('# '): html_lines.append(f"<h1>{line[2:]}</h1>")
                 elif line.startswith('* ') or line.startswith('- '): html_lines.append(f"<li>{line[2:]}</li>")
-                else: html_lines.append(f"<p>{re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', line)}</p>")
+                else:
+                    processed_line = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', line)
+                    html_lines.append("<p>" + processed_line + "</p>")
             
             final_content = ""
             in_list = False
@@ -321,7 +322,8 @@ def extract_presentation_template(raw_llm_markdown: str) -> Optional[str]:
     if not slide_sections:
         return None
 
-    return f"""
+    # ✅ FIXED: Changed string type and formatting syntax to isolate structural braces from layout styles
+    presentation_base = """
     <!doctype html>
     <html lang="en">
     <head>
@@ -329,26 +331,27 @@ def extract_presentation_template(raw_llm_markdown: str) -> Optional[str]:
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/black.min.css">
         <style>
-            .reveal h1, .reveal h2, .reveal h3 {{ color: #10b981 !important; font-weight: bold; text-transform: none; }}
-            .reveal li, .reveal p {{ color: #e2e8f0 !important; font-size: 24px; line-height: 1.5; }}
-            .reveal ul {{ display: inline-block; text-align: left; }}
+            .reveal h1, .reveal h2, .reveal h3 { color: #10b981 !important; font-weight: bold; text-transform: none; }
+            .reveal li, .reveal p { color: #e2e8f0 !important; font-size: 24px; line-height: 1.5; }
+            .reveal ul { display: inline-block; text-align: left; }
         </style>
     </head>
     <body>
         <div class="reveal">
             <div class="slides">
-                {slide_sections}
+                __SLIDE_PLACEHOLDER__
             </div>
         </div>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
         <script>
-            setTimeout(() => {{
-                Reveal.initialize({{ controls: true, progress: true, center: true, embedded: true }});
-            }}, 200);
+            setTimeout(() => {
+                Reveal.initialize({ controls: true, progress: true, center: true, embedded: true });
+            }, 200);
         </script>
     </body>
     </html>
     """
+    return presentation_base.replace("__SLIDE_PLACEHOLDER__", slide_sections)
 
 @app.get("/", response_class=HTMLResponse)
 def serve_ui():

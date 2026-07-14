@@ -39,7 +39,7 @@ class ChatRequest(BaseModel):
 
 USER_SESSION_CONTEXT = []
 
-# --- FULL CORRECTED USER INTERFACE (ESCAPED STRINGS) ---
+# --- EXTENSIVELY UPGRADED PREMIUM LIGHT/DARK MONOCHROME USER INTERFACE ---
 HTML_UI = """
 <!DOCTYPE html>
 <html lang="en">
@@ -50,111 +50,180 @@ HTML_UI = """
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        .theme-dark::-webkit-scrollbar-thumb { background: #1f293d; border-radius: 9999px; }
-        .theme-light::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        
+        /* Dark Theme Scrollbars */
+        .theme-dark ::-webkit-scrollbar-thumb { background: #262626; border-radius: 9999px; }
+        .theme-dark ::-webkit-scrollbar-thumb:hover { background: #404040; }
+        
+        /* Light Theme Scrollbars */
+        .theme-light ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 9999px; }
+        .theme-light ::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
+
         .prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-        .prose th, .prose td { border: 1px solid #334155; padding: 0.5rem; text-align: left; }
-        .prose th { background-color: #0f172a; }
+        .prose th, .prose td { border: 1px solid #404040; padding: 0.6rem; text-align: left; }
+        .theme-light .prose th, .theme-light .prose td { border: 1px solid #e5e5e5; }
+        .prose th { background-color: #171717; color: #ffffff; }
+        .theme-light .prose th { background-color: #f5f5f5; color: #171717; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin: 0.5rem 0; }
+        .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin: 0.5rem 0; }
+        
+        /* Dynamic Theme Transitions */
+        .theme-transition { transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease, color 0.2s ease; }
     </style>
 </head>
-<body id="appBody" class="theme-dark bg-[#0b0f19] text-[#e2e8f0] font-sans antialiased h-screen flex overflow-hidden transition-colors duration-300">
+<body id="appBody" class="theme-dark bg-[#0D0D0D] text-[#ECECEC] font-sans antialiased h-screen flex overflow-hidden theme-transition">
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-[260px] bg-[#070a10] border-r border-[#1e293b]/40 flex flex-col justify-between transition-transform duration-300 transform md:relative md:translate-x-0 -translate-x-full shrink-0">
+    <!-- Sidebar Layout -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-[260px] bg-[#171717] border-r border-[#262626] flex flex-col justify-between transition-transform duration-300 ease-in-out transform md:relative md:translate-x-0 -translate-x-full shrink-0 theme-transition">
         <div class="p-3.5 flex flex-col h-full overflow-y-auto">
-            <button onclick="clearChatLog()" class="flex items-center justify-between w-full px-4 py-2.5 text-sm font-semibold rounded-xl bg-[#0f172a] border-2 border-[#10b981] text-white shadow-[0_0_15px_rgba(16,185,129,0.15)] mb-6 hover:bg-[#10b981]/10 transition-all">
-                <div class="flex items-center gap-2.5"><span class="text-base text-[#10b981]">⚛️</span> New chat</div>
-                <span class="text-xs text-[#64748b]">Reset</span>
-            </button>
-            <div class="space-y-1">
-                <p class="px-3 text-xs font-bold text-[#475569] uppercase tracking-wider mb-2.5">Core Chat Logs</p>
+            <!-- New Chat / Close Mobile Menu Header Row -->
+            <div class="flex items-center gap-2 w-full">
+                <button onclick="clearChatLog()" class="flex items-center justify-between flex-1 px-3 py-2 text-sm font-medium rounded-lg text-neutral-200 dark:text-neutral-800 hover:bg-[#212121] dark:hover:bg-neutral-200 border border-[#262626] dark:border-neutral-300 transition-all group bg-transparent">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="w-4 h-4 text-neutral-200 dark:text-neutral-800 fill-none stroke-current" viewBox="0 0 100 100" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 85 L50 15 L70 55" />
+                            <path d="M50 15 L85 15" />
+                            <path d="M30 60 L60 60" />
+                            <path d="M52 45 C65 45, 65 60, 80 60" />
+                        </svg>
+                        <span>New chat</span>
+                    </div>
+                    <span class="text-xs text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity">Reset</span>
+                </button>
+                
+                <!-- Explicit Close Button on Mobile Sidebar View -->
+                <button onclick="toggleMobileSidebar()" class="md:hidden p-2 rounded-lg border border-[#262626] dark:border-neutral-300 text-neutral-400 dark:text-neutral-600 hover:text-white dark:hover:text-black hover:bg-[#212121] dark:hover:bg-neutral-200 transition-all" aria-label="Close Sidebar">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+
+            <div class="mt-6 space-y-1">
+                <p class="px-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">History</p>
                 <div id="historyLogs" class="space-y-1"></div>
             </div>
         </div>
-        <div class="p-4 border-t border-[#1e293b]/30 flex flex-col gap-3 bg-[#05070b]">
-            <div>
-                <span class="text-xs font-semibold text-[#475569] uppercase tracking-wider block mb-2 px-1">Console Settings</span>
-                <button onclick="toggleThemeConfig()" class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg bg-[#0f172a] border border-[#1e293b]/50 text-slate-300 hover:text-white transition-all">
-                    <span>Theme Mode</span>
-                    <span id="themeBtnLabel" class="text-[#10b981] font-bold">🌙 Dark</span>
-                </button>
-            </div>
-            <div class="flex items-center gap-3 p-2 rounded-xl bg-[#0f172a]/40 border border-[#1e293b]/20">
-                <div class="w-8 h-8 rounded-full bg-[#070a10] border border-[#10b981] flex items-center justify-center shadow-md shrink-0"><span class="text-xs">⚛️</span></div>
+        
+        <!-- Bottom Controls Dashboard -->
+        <div class="p-3 border-t border-[#262626] dark:border-neutral-200 flex flex-col gap-2 bg-[#171717] dark:bg-[#F9F9F9] theme-transition">
+            <button onclick="toggleThemeConfig()" class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-neutral-400 dark:text-neutral-600 hover:text-white dark:hover:text-black hover:bg-[#212121] dark:hover:bg-neutral-200 border border-[#262626] dark:border-neutral-300 transition-all bg-transparent">
+                <span>Interface Theme</span>
+                <span id="themeBtnLabel" class="px-2 py-0.5 rounded text-[10px] bg-[#262626] dark:bg-neutral-200 text-white dark:text-neutral-900 font-mono font-bold uppercase tracking-wider transition-colors">Dark</span>
+            </button>
+            
+            <!-- Branding Panel -->
+            <div class="flex items-center gap-3 p-2 rounded-lg bg-[#212121]/50 dark:bg-neutral-200/60 border border-[#262626] dark:border-neutral-300 theme-transition">
+                <div class="w-8 h-8 rounded-md bg-white dark:bg-black flex items-center justify-center shrink-0 transition-colors">
+                    <svg class="w-5 h-5 text-black dark:text-white fill-none stroke-current" viewBox="0 0 100 100" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 85 L50 15 L70 55" />
+                        <path d="M50 15 L85 15" />
+                        <path d="M30 60 L60 60" />
+                        <path d="M52 45 C65 45, 65 60, 80 60" />
+                    </svg>
+                </div>
                 <div class="flex flex-col truncate">
-                    <span class="text-sm font-bold text-white tracking-wide">ATOM-FLOW</span>
-                    <span class="text-[10px] text-[#10b981] font-mono tracking-widest uppercase">Multi-Modal Core</span>
+                    <span class="text-xs font-bold text-white dark:text-neutral-900 tracking-wider uppercase">ATOM-FLOW</span>
+                    <span class="text-[9px] text-neutral-400 dark:text-neutral-500 font-mono tracking-widest uppercase">AI Core v3</span>
                 </div>
             </div>
         </div>
     </aside>
 
-    <div id="sidebarOverlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden"></div>
+    <!-- Sidebar overlay for closing clickout triggers -->
+    <div id="sidebarOverlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden backdrop-blur-xs transition-opacity duration-300"></div>
 
-    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
-        <header id="mainHeader" class="h-14 flex items-center px-4 justify-between border-b border-[#1e293b]/30 z-10 bg-[#0b0f19]/80 backdrop-blur-md transition-colors">
-            <button onclick="toggleMobileSidebar()" class="p-2 text-[#64748b] hover:text-white rounded-lg hover:bg-[#1e293b]/40 transition-colors focus:outline-none md:hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+    <!-- Main Workspace Frame -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-[#212121]/10 dark:bg-[#F4F4F4]/40 theme-transition">
+        
+        <!-- Workspace Header Platform -->
+        <header id="mainHeader" class="h-14 flex items-center px-4 justify-between border-b border-[#262626] dark:border-neutral-200 z-10 bg-[#0D0D0D]/90 dark:bg-white/90 backdrop-blur-md theme-transition">
+            <button onclick="toggleMobileSidebar()" class="p-2 text-neutral-400 dark:text-neutral-600 hover:text-white dark:hover:text-black rounded-lg hover:bg-[#212121] dark:hover:bg-neutral-200 transition-colors focus:outline-none md:hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
             </button>
-            <div class="text-sm font-medium text-[#94a3b8]">Engine: <span id="modelLabel" class="text-white font-bold tracking-wide">ATOM-CORE (Multimodal)</span></div>
+            <div id="hubIndicator" class="text-xs font-semibold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase">System Hub</div>
             <div class="w-9"></div>
         </header>
 
-        <div id="chatFeed" class="flex-1 overflow-y-auto px-4 py-6 space-y-6 max-w-3xl w-full mx-auto flex flex-col z-10">
+        <!-- Main Workspace Flow Stream Feed container -->
+        <div id="chatFeed" class="flex-1 overflow-y-auto px-4 py-8 space-y-8 max-w-2xl w-full mx-auto flex flex-col z-10 scroll-smooth">
+            <!-- Welcome Core Prompt Card -->
             <div class="flex gap-4 items-start text-base">
-                <div class="w-8 h-8 rounded-full bg-[#070a10] border border-[#10b981] flex items-center justify-center text-xs shrink-0 shadow-md">⚛️</div>
-                <div class="space-y-1.5 flex-1 pt-0.5 leading-relaxed">
-                    <p class="font-bold text-white text-sm tracking-wide">ATOM-FLOW Core</p>
-                    <p class="text-[#cbd5e1] text-[15px]">Multi-modal engine online. Try saying **"Create a presentation on Cyber Security"** to unlock the interactive presentation panel.</p>
+                <div id="systemAvatar" class="w-8 h-8 rounded-md bg-white dark:bg-neutral-900 text-black dark:text-white border dark:border-neutral-800 flex items-center justify-center shrink-0 shadow-md">
+                    <svg class="w-5 h-5 fill-none stroke-current" viewBox="0 0 100 100" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 85 L50 15 L70 55" />
+                        <path d="M50 15 L85 15" />
+                        <path d="M30 60 L60 60" />
+                        <path d="M52 45 C65 45, 65 60, 80 60" />
+                    </svg>
+                </div>
+                <div class="space-y-2 flex-1 pt-0.5">
+                    <p id="systemLabelText" class="font-bold text-neutral-200 dark:text-neutral-800 text-sm tracking-wide uppercase">ATOM-FLOW Core</p>
+                    <p id="systemGreetingText" class="text-neutral-400 dark:text-neutral-600 text-[15px] leading-relaxed">System online. Submit an objective or text stream link to synthesize workflows, interactive slides, or technical study documentation.</p>
                 </div>
             </div>
         </div>
 
-        <footer class="p-4 bg-gradient-to-t from-[#0b0f19] via-[#0b0f19] to-transparent z-10" id="mainFooter">
-            <div class="max-w-3xl w-full mx-auto relative flex flex-col items-center">
-                <div class="flex flex-wrap gap-2 mb-3 justify-start w-full px-1">
-                    <button onclick="applyQuickAction('Explain this concept simply with examples: ')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-[#0f172a] border border-[#1e293b]/60 text-[#94a3b8] hover:text-white hover:border-[#10b981] transition-all">📝 Simplify Concept</button>
-                    <button onclick="applyQuickAction('Give me a 3-question conceptual quiz on this topic: ')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-[#0f172a] border border-[#1e293b]/60 text-[#94a3b8] hover:text-white hover:border-[#10b981] transition-all">🧪 Quiz Me</button>
-                    <button onclick="applyQuickAction('Create a professional presentation on ')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-[#0f172a] border border-[#10b981]/80 text-[#10b981] hover:bg-[#10b981]/10 transition-all">📊 Create Presentation</button>
+        <!-- Input Actions Matrix Deck -->
+        <footer class="p-4 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D] to-transparent dark:from-[#FFFFFF] dark:via-[#FFFFFF] z-10 theme-transition" id="mainFooter">
+            <div class="max-w-2xl w-full mx-auto relative flex flex-col items-center">
+                
+                <!-- Quick Action Prompt Hooks -->
+                <div class="flex flex-wrap gap-1.5 mb-3 justify-start w-full px-1">
+                    <button onclick="applyQuickAction('Explain this concept simply with examples: ')" class="px-3 py-1 text-xs font-medium rounded-md bg-[#171717] dark:bg-white border border-[#262626] dark:border-neutral-300 text-neutral-400 dark:text-neutral-600 hover:text-white dark:hover:text-black transition-all">Simplify Concept</button>
+                    <button onclick="applyQuickAction('Give me a 3-question conceptual quiz on this topic: ')" class="px-3 py-1 text-xs font-medium rounded-md bg-[#171717] dark:bg-white border border-[#262626] dark:border-neutral-300 text-neutral-400 dark:text-neutral-600 hover:text-white dark:hover:text-black transition-all">Quiz Assessment</button>
+                    <button onclick="applyQuickAction('Create a professional presentation on ')" class="px-3 py-1 text-xs font-semibold rounded-md bg-white dark:bg-neutral-900 border border-white dark:border-neutral-900 text-black dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all shadow-sm">Create Slides</button>
                 </div>
 
-                <div id="filePreviewBar" class="hidden w-full bg-[#0f172a] border-x border-t border-[#1e293b]/60 px-4 py-2 rounded-t-2xl flex items-center justify-between text-xs text-slate-300">
+                <!-- Attached File Metadata View Badge -->
+                <div id="filePreviewBar" class="hidden w-full bg-[#171717] dark:bg-neutral-100 border-x border-t border-[#262626] dark:border-neutral-300 px-4 py-2 rounded-t-xl flex items-center justify-between text-xs text-neutral-300 dark:text-neutral-700">
                     <div class="flex items-center gap-2 truncate">
-                        <span class="text-[#10b981]">📎</span>
-                        <span id="fileNameDisplay" class="truncate font-mono">file.jpg</span>
+                        <span class="text-neutral-400 dark:text-neutral-500">📎</span>
+                        <span id="fileNameDisplay" class="truncate font-mono">source.data</span>
                     </div>
-                    <button onclick="removeAttachedFile()" class="text-rose-400 hover:text-rose-300 font-bold px-1">Remove</button>
+                    <button onclick="removeAttachedFile()" class="text-neutral-400 dark:text-neutral-600 hover:text-white dark:hover:text-black underline font-semibold px-1">Discard</button>
                 </div>
 
-                <div id="inputContainer" class="w-full relative flex items-center bg-[#0f172a] rounded-2xl border border-[#1e293b]/60 group transition-all">
+                <!-- Main Context Entry Console Box -->
+                <div id="inputContainer" class="w-full relative flex items-center bg-[#171717] dark:bg-white rounded-xl border border-[#262626] dark:border-neutral-300 group transition-all shadow-xs focus-within:border-neutral-400 dark:focus-within:border-neutral-500">
                     <input type="file" id="filePayloadInput" class="hidden" onchange="handleFilePayloadSelection(event)" accept="image/*,application/pdf">
-                    <button onclick="document.getElementById('filePayloadInput').click()" class="absolute left-3 p-2 text-[#475569] hover:text-[#10b981] transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" /></svg>
+                    <button onclick="document.getElementById('filePayloadInput').click()" class="absolute left-3.5 p-1.5 text-neutral-500 dark:text-neutral-400 hover:text-white dark:hover:text-black transition-colors" aria-label="Attach File">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" /></svg>
                     </button>
-                    <textarea id="messageInput" rows="1" placeholder="Message Atom-Flow Matrix..." class="w-full bg-transparent text-white placeholder-[#475569] pl-12 pr-14 py-4 resize-none focus:outline-none text-[15px] max-h-40 overflow-y-auto" onkeydown="handleKeyDown(event)"></textarea>
-                    <button onclick="commitMessageToSend()" class="absolute right-3.5 p-2 bg-[#070a10] border border-[#1e293b]/40 hover:bg-white text-white hover:text-black rounded-xl transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" /></svg>
+                    <textarea id="messageInput" rows="1" placeholder="Type a message or paste a link..." class="w-full bg-transparent text-white dark:text-black placeholder-neutral-600 dark:placeholder-neutral-400 pl-12 pr-14 py-3.5 resize-none focus:outline-none text-[15px] max-h-40 overflow-y-auto" onkeydown="handleKeyDown(event)"></textarea>
+                    <button onclick="commitMessageToSend()" class="absolute right-3 p-1.5 bg-white dark:bg-neutral-900 text-black dark:text-white border border-transparent dark:border-neutral-700 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all shadow-xs" aria-label="Send message">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" /></svg>
                     </button>
                 </div>
             </div>
         </footer>
     </main>
 
-    <div id="presentationModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-[#0f172a] border border-[#1e293b] rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
-            <div class="px-6 py-4 border-b border-[#1e293b] flex items-center justify-between bg-[#070a10]">
+    <!-- Modal Interactive Slides Deck Frame View -->
+    <div id="presentationModal" class="fixed inset-0 bg-black/95 z-50 hidden flex items-center justify-center p-4 backdrop-blur-md transition-opacity duration-300">
+        <div class="bg-[#171717] dark:bg-white border border-[#262626] dark:border-neutral-200 rounded-xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden shadow-2xl relative">
+            
+            <!-- Slides View Header Context Controls -->
+            <div class="px-5 py-3 border-b border-[#262626] dark:border-neutral-200 flex items-center justify-between bg-[#0D0D0D] dark:bg-neutral-50">
                 <div class="flex items-center gap-2">
-                    <span class="text-[#10b981] text-lg">📊</span>
-                    <h3 class="font-bold text-white tracking-wide">ATOM-FLOW Interactive Presentation Engine</h3>
+                    <h3 class="font-bold text-white dark:text-neutral-800 text-xs tracking-widest uppercase">ATOM-FLOW Presentation Hub</h3>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="downloadPresentationFile()" class="px-4 py-1.5 text-xs font-bold bg-[#10b981] text-black rounded-lg hover:bg-[#0d9668] transition-all">📥 Download Slide Deck</button>
-                    <button onclick="closePresentationWorkspace()" class="text-slate-400 hover:text-white font-bold text-sm bg-slate-800/60 px-3 py-1.5 rounded-lg">Close</button>
+                <div class="flex items-center gap-2">
+                    <button onclick="downloadPresentationFile()" class="px-3 py-1 text-xs font-semibold bg-white dark:bg-neutral-900 text-black dark:text-white border dark:border-neutral-700 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all shadow-sm">Download Deck</button>
+                    
+                    <!-- Highly Visible Desktop Modal Window Close Element -->
+                    <button onclick="closePresentationWorkspace()" class="text-neutral-400 dark:text-neutral-600 hover:text-white dark:hover:text-black text-xs bg-[#262626] dark:bg-neutral-200 px-3 py-1 rounded-md transition-all font-medium">Close Deck</button>
                 </div>
             </div>
-            <div class="flex-1 bg-[#111111] relative">
+            
+            <!-- Embedded Core Slide Output Window Content -->
+            <div class="flex-1 bg-black relative">
                 <iframe id="presentationFrame" class="w-full h-full border-none"></iframe>
+            </div>
+
+            <!-- Mobile Gesture Close Prompt Strip Anchor -->
+            <div onclick="closePresentationWorkspace()" class="bg-[#0D0D0D] dark:bg-neutral-50 text-center py-2 text-xs border-t border-[#262626] dark:border-neutral-200 text-neutral-500 hover:text-neutral-300 dark:hover:text-black cursor-pointer select-none font-semibold uppercase tracking-wider transition-colors">
+                ↑ Click here or Swipe up to exit workspace preview ↑
             </div>
         </div>
     </div>
@@ -165,27 +234,88 @@ HTML_UI = """
         let attachedFileMime = null;
         let currentPresentationHtml = "";
 
+        // Establish core markdown styling variables
         marked.setOptions({ gfm: true, breaks: true });
 
+        // Touch Interaction Variables for Slide-out Navigation & Dismissals
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        // Mobile Sidebar Management Framework
         function toggleMobileSidebar() {
             const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('-translate-x-full');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
         }
 
+        // --- FULL-SCALE LIGHT MODE VS DARK MODE GRAPHIC REBUILD ---
         function toggleThemeConfig() {
             isDarkMode = !isDarkMode;
             const body = document.getElementById('appBody');
             const themeBtnLabel = document.getElementById('themeBtnLabel');
+            const mainHeader = document.getElementById('mainHeader');
+            const mainFooter = document.getElementById('mainFooter');
+            const sidebar = document.getElementById('sidebar');
+            
             if (!isDarkMode) {
+                // Apply Light Mode Classes
                 body.classList.replace('theme-dark', 'theme-light');
-                body.classList.replace('bg-[#0b0f19]', 'bg-[#f8fafc]');
-                body.classList.replace('text-[#e2e8f0]', 'text-[#334155]');
-                themeBtnLabel.innerHTML = "☀️ Light";
+                body.classList.replace('bg-[#0D0D0D]', 'bg-[#FFFFFF]');
+                body.classList.replace('text-[#ECECEC]', 'text-[#171717]');
+                
+                mainHeader.classList.replace('bg-[#0D0D0D]/90', 'bg-white/90');
+                mainHeader.classList.replace('border-[#262626]', 'border-neutral-200');
+                
+                themeBtnLabel.innerHTML = "Light";
+                themeBtnLabel.classList.replace('bg-[#262626]', 'bg-neutral-200');
+                themeBtnLabel.classList.replace('text-white', 'text-neutral-900');
+                
+                // Regenerate Dynamic Feed Items for Light Mode contrast
+                document.querySelectorAll('.user-bubble').forEach(el => {
+                    if (el) {
+                        el.classList.replace('bg-[#171717]', 'bg-neutral-100');
+                        el.classList.replace('text-neutral-100', 'text-neutral-900');
+                        el.classList.replace('border-[#262626]', 'border-neutral-200');
+                    }
+                });
+                
+                document.querySelectorAll('.model-text-container').forEach(el => {
+                    if (el) el.classList.replace('text-neutral-300', 'text-neutral-800');
+                });
+
             } else {
+                // Revert to Dark Mode Classes
                 body.classList.replace('theme-light', 'theme-dark');
-                body.classList.replace('bg-[#f8fafc]', 'bg-[#0b0f19]');
-                body.classList.replace('text-[#334155]', 'text-[#e2e8f0]');
-                themeBtnLabel.innerHTML = "🌙 Dark";
+                body.classList.replace('bg-[#FFFFFF]', 'bg-[#0D0D0D]');
+                body.classList.replace('text-[#171717]', 'text-[#ECECEC]');
+                
+                mainHeader.classList.replace('bg-white/90', 'bg-[#0D0D0D]/90');
+                mainHeader.classList.replace('border-neutral-200', 'border-[#262626]');
+                
+                themeBtnLabel.innerHTML = "Dark";
+                themeBtnLabel.classList.replace('bg-neutral-200', 'bg-[#262626]');
+                themeBtnLabel.classList.replace('text-neutral-900', 'text-white');
+                
+                document.querySelectorAll('.user-bubble').forEach(el => {
+                    if (el) {
+                        el.classList.replace('bg-neutral-100', 'bg-[#171717]');
+                        el.classList.replace('text-neutral-900', 'text-neutral-100');
+                        el.classList.replace('border-neutral-200', 'border-[#262626]');
+                    }
+                });
+                
+                document.querySelectorAll('.model-text-container').forEach(el => {
+                    if (el) el.classList.replace('text-neutral-800', 'text-neutral-300');
+                });
             }
         }
 
@@ -204,6 +334,7 @@ HTML_UI = """
 
         function removeAttachedFile() {
             attachedFileB64 = null; attachedFileMime = null;
+            document.getElementById('filePayloadInput').value = "";
             document.getElementById('filePreviewBar').classList.add('hidden');
         }
 
@@ -226,16 +357,23 @@ HTML_UI = """
             }
         }
 
+        // Refactored Message DOM Builder supporting semantic light mode context rules
         function appendMessageRow(text, isUser) {
             const feed = document.getElementById('chatFeed');
             let contentHtml = isUser ? text : marked.parse(text);
+            
+            let userBg = isDarkMode ? "bg-[#171717] text-neutral-100 border-[#262626]" : "bg-neutral-100 text-neutral-900 border-neutral-200";
+            let modelColor = isDarkMode ? "text-neutral-300" : "text-neutral-800";
+            
             let row = isUser ? 
-                '<div class="flex gap-4 items-start text-base self-end justify-end w-full max-w-xl ml-auto"><div class="bg-slate-800 text-white rounded-2xl px-4 py-3 shadow-md">' + contentHtml + '</div></div>' :
-                '<div class="flex gap-4 items-start text-base"><div class="w-8 h-8 rounded-full bg-[#070a10] border border-[#10b981] flex items-center justify-center text-xs shrink-0 shadow-md">⚛️</div><div class="space-y-1.5 flex-1 pt-0.5"><p class="font-bold text-white text-sm">ATOM-FLOW Core</p><div class="prose text-[#cbd5e1] text-[15px]">' + contentHtml + '</div></div></div>';
+                `<div class="flex gap-4 items-start text-base self-end justify-end w-full max-w-xl ml-auto"><div class="user-bubble border rounded-2xl px-4 py-2.5 text-[15px] shadow-xs theme-transition ${userBg}">${contentHtml}</div></div>` :
+                `<div class="flex gap-4 items-start text-base border-t border-neutral-800/10 dark:border-neutral-200/40 pt-6"><div class="w-8 h-8 rounded-md bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center shrink-0 shadow-xs"><svg class="w-5 h-5 text-black dark:text-white fill-none stroke-current" viewBox="0 0 100 100" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M15 85 L50 15 L70 55" /><path d="M50 15 L85 15" /><path d="M30 60 L60 60" /><path d="M52 45 C65 45, 65 60, 80 60" /></svg></div><div class="space-y-1 flex-1 pt-0.5"><p class="font-bold text-xs tracking-wider uppercase text-neutral-400 dark:text-neutral-500">ATOM-FLOW Core</p><div class="model-text-container prose text-[15px] leading-relaxed theme-transition ${modelColor}">${contentHtml}</div></div></div>`;
+            
             feed.insertAdjacentHTML('beforeend', row);
             feed.scrollTop = feed.scrollHeight;
         }
 
+        // Open Presentation Slide Modal Layer
         function openPresentationWorkspace(rawSlideCode) {
             if (!rawSlideCode) return;
             currentPresentationHtml = rawSlideCode;
@@ -243,8 +381,10 @@ HTML_UI = """
             document.getElementById('presentationFrame').srcdoc = rawSlideCode;
         }
 
+        // Close Deck Action Handler
         function closePresentationWorkspace() {
             document.getElementById('presentationModal').classList.add('hidden');
+            document.getElementById('presentationFrame').srcdoc = "";
         }
 
         function downloadPresentationFile() {
@@ -277,12 +417,47 @@ HTML_UI = """
             .catch(() => appendMessageRow("System connection error.", false));
             removeAttachedFile();
         }
+
+        // --- GESTURE NAVIGATION AND SWIPE ROUTINES ---
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleGlobalSwipeGestures();
+        }, false);
+
+        function handleGlobalSwipeGestures() {
+            const horizontalSwipeLength = touchEndX - touchStartX;
+            const verticalSwipeLength = touchEndY - touchStartY;
+            const sidebar = document.getElementById('sidebar');
+            const presentationModal = document.getElementById('presentationModal');
+
+            // 1. Sidebar Left/Right Swipe Navigation
+            if (Math.abs(horizontalSwipeLength) > 100 && Math.abs(verticalSwipeLength) < 60) {
+                if (horizontalSwipeLength > 0 && sidebar.classList.contains('-translate-x-full')) {
+                    toggleMobileSidebar();
+                } else if (horizontalSwipeLength < 0 && !sidebar.classList.contains('-translate-x-full')) {
+                    toggleMobileSidebar();
+                }
+            }
+
+            // 2. Slide View Modal Upward Dismissal Swipe Action
+            if (!presentationModal.classList.contains('hidden')) {
+                if (verticalSwipeLength < -80) {
+                    closePresentationWorkspace();
+                }
+            }
+        }
     </script>
 </body>
 </html>
 """
 
-# --- REVEAL.JS PRESENTATION ENGINE COMPILER ---
+# --- REVEAL.JS MONOCHROME PRESENTATION COMPILER ---
 def extract_presentation_template(raw_llm_markdown: str) -> Optional[str]:
     match = re.search(r'```slides\s*(.*?)\n```', raw_llm_markdown, re.DOTALL | re.IGNORECASE)
     if not match:
@@ -317,12 +492,11 @@ def extract_presentation_template(raw_llm_markdown: str) -> Optional[str]:
                     if in_list: final_content += "</ul>"; in_list = False
                     final_content += item
             if in_list: final_content += "</ul>"
-            slide_sections += f"<section data-background-color='#0f172a'>\n{final_content}\n</section>\n"
+            slide_sections += f"<section data-background-color='#000000'>\n{final_content}\n</section>\n"
 
     if not slide_sections:
         return None
 
-    # ✅ FIXED: Changed string type and formatting syntax to isolate structural braces from layout styles
     presentation_base = """
     <!doctype html>
     <html lang="en">
@@ -331,8 +505,8 @@ def extract_presentation_template(raw_llm_markdown: str) -> Optional[str]:
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/black.min.css">
         <style>
-            .reveal h1, .reveal h2, .reveal h3 { color: #10b981 !important; font-weight: bold; text-transform: none; }
-            .reveal li, .reveal p { color: #e2e8f0 !important; font-size: 24px; line-height: 1.5; }
+            .reveal h1, .reveal h2, .reveal h3 { color: #FFFFFF !important; font-weight: bold; text-transform: none; }
+            .reveal li, .reveal p { color: #A3A3A3 !important; font-size: 24px; line-height: 1.5; }
             .reveal ul { display: inline-block; text-align: left; }
         </style>
     </head>

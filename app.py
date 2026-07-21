@@ -14,7 +14,7 @@ from google import genai
 from google.genai import types
 
 app = FastAPI(
-    title="ChatFusion Engine",
+    title="ATOM-FLOW Engine",
     description="Context-Aware Multi-Modal Workspace",
     version="3.0.0"
 )
@@ -39,21 +39,21 @@ class ChatRequest(BaseModel):
 
 USER_SESSION_CONTEXT = []
 
-# --- FULL EXCLUSIVE CHATFUSION MONOCHROME UI PLATFORM ---
+# --- FULL EXCLUSIVE ATOM-FLOW MONOCHROME UI PLATFORM ---
 HTML_UI = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatFusion Workspace</title>
+    <title>ATOM-FLOW Workspace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         
-        /* Premium Dark Theme Scrollbars matching image template */
+        /* Premium Dark Theme Scrollbars */
         .theme-dark ::-webkit-scrollbar-thumb { background: #2A2A32; border-radius: 9999px; }
         .theme-dark ::-webkit-scrollbar-thumb:hover { background: #3F3F4E; }
         
@@ -77,11 +77,15 @@ HTML_UI = """
     <!-- Sidebar Layout Frame -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-[260px] bg-[#18181C] border-r border-[#232329] flex flex-col justify-between transition-transform duration-300 ease-in-out transform md:relative md:translate-x-0 -translate-x-full shrink-0 theme-transition">
         <div class="p-3.5 flex flex-col h-full overflow-y-auto">
-            <!-- Header Identity block matching the reference screenshot design layout -->
+            <!-- Header Identity block with Embedded ATOM-FLOW AF Logo -->
             <div class="flex items-center justify-between w-full mb-4 px-1.5">
-                <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full bg-neutral-400"></div>
-                    <span class="text-xs font-semibold tracking-wider text-neutral-400 uppercase select-none">ChatFusion</span>
+                <div class="flex items-center gap-2.5">
+                    <!-- Inline High-Fidelity Custom SVG Logo Asset mirroring user image specs -->
+                    <svg class="w-6 h-6 text-white dark:text-black transition-colors" viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M45 10 L25 50 M45 10 L30 50 M27 45 L50 45" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M42 16 L53 38 C55 42, 60 41, 62 37 L67 27 M57 27 L75 27 M54 16 L78 16" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="text-xs font-bold tracking-wider text-neutral-200 dark:text-neutral-800 uppercase select-none">ATOM-FLOW</span>
                 </div>
                 <button onclick="toggleMobileSidebar()" class="md:hidden p-1 rounded text-neutral-400 hover:text-white transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
@@ -101,9 +105,7 @@ HTML_UI = """
             <!-- Dynamic Chat History Logs Frame Feed Section -->
             <div class="mt-6 space-y-1">
                 <p class="px-1.5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2">Recent</p>
-                <div id="historyLogs" class="space-y-0.5 max-h-[50vh] overflow-y-auto">
-                    <!-- Automatically filled dynamically by user text metrics -->
-                </div>
+                <div id="historyLogs" class="space-y-0.5 max-h-[50vh] overflow-y-auto"></div>
             </div>
         </div>
         
@@ -122,21 +124,28 @@ HTML_UI = """
     <!-- Main Workspace Frame -->
     <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-[#0E0E11] dark:bg-[#F5F5F7] theme-transition">
         
-        <!-- Dynamic Header Layer -->
+        <!-- Dynamic Header Layer with Mobile Logo Viewport -->
         <header id="mainHeader" class="h-14 flex items-center px-4 justify-between border-b border-[#232329] dark:border-neutral-200 z-10 bg-[#0E0E11]/90 dark:bg-white/90 backdrop-blur-md theme-transition">
             <button onclick="toggleMobileSidebar()" class="p-2 text-neutral-400 dark:text-neutral-600 hover:text-white dark:hover:text-black rounded-lg hover:bg-[#232329] dark:hover:bg-neutral-200 transition-colors focus:outline-none md:hidden">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
             </button>
-            <div id="hubIndicator" class="text-xs font-semibold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">Workspace Hub</div>
+            <div class="flex items-center gap-2">
+                <!-- Mobile top header logo asset slot -->
+                <svg class="w-5 h-5 text-white dark:text-black md:hidden transition-colors" viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M45 10 L25 50 M45 10 L30 50 M27 45 L50 45" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M42 16 L53 38 C55 42, 60 41, 62 37 L67 27 M57 27 L75 27 M54 16 L78 16" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div id="hubIndicator" class="text-xs font-semibold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">ATOM-FLOW Hub</div>
+            </div>
             <div class="w-9"></div>
         </header>
 
         <!-- Main Conversational Flow Stream Container -->
         <div id="chatFeed" class="flex-1 overflow-y-auto px-4 py-8 space-y-8 max-w-2xl w-full mx-auto flex flex-col z-10 scroll-smooth">
-            <!-- Core Greeting Screen Layout Component matching image reference structure -->
+            <!-- Core Greeting Screen Layout Component -->
             <div id="defaultWelcomePane" class="my-auto flex flex-col items-center text-center space-y-4">
                 <h2 class="text-2xl font-medium tracking-tight text-white dark:text-neutral-900">Good Day Workspace</h2>
-                <p class="text-sm text-neutral-500 max-w-sm">How can ChatFusion assist you today? Initialize a concept synthesis or slide generation session down below.</p>
+                <p class="text-sm text-neutral-500 max-w-sm">How can ATOM-FLOW assist you today? Initialize a concept synthesis or slide generation session down below.</p>
             </div>
         </div>
 
@@ -211,7 +220,6 @@ HTML_UI = """
             }
         }
 
-        // --- THEME SWITCH MATRIX FIX ---
         function toggleThemeConfig() {
             isDarkMode = !isDarkMode;
             const body = document.getElementById('appBody');
@@ -265,7 +273,6 @@ HTML_UI = """
             }
         }
 
-        // --- WORKING CHAT HISTORY CONTROLLER MANAGEMENT LAYER ---
         function addHistoryItem(messageText) {
             const historyLogs = document.getElementById('historyLogs');
             const truncatedText = messageText.length > 28 ? messageText.substring(0, 25) + "..." : messageText;
@@ -320,7 +327,7 @@ HTML_UI = """
                 document.getElementById('chatFeed').innerHTML = `
                     <div id="defaultWelcomePane" class="my-auto flex flex-col items-center text-center space-y-4">
                         <h2 class="text-2xl font-medium tracking-tight text-white dark:text-neutral-900">Good Day Workspace</h2>
-                        <p class="text-sm text-neutral-500 max-w-sm">How can ChatFusion assist you today? Initialize a concept synthesis or slide generation session down below.</p>
+                        <p class="text-sm text-neutral-500 max-w-sm">How can ATOM-FLOW assist you today? Initialize a concept synthesis or slide generation session down below.</p>
                     </div>
                 `;
                 document.getElementById('historyLogs').innerHTML = '';
@@ -340,7 +347,12 @@ HTML_UI = """
             const welcomePane = document.getElementById('defaultWelcomePane');
             if (welcomePane) welcomePane.remove();
 
-            let contentHtml = isUser ? text : marked.parse(text);
+            let renderText = text;
+            if (!isUser) {
+                renderText = text.replace(/```slides[\s\S]*?```/gi, '_[Slide Deck Compiled and Available in the Previewer Layout Above]_');
+            }
+
+            let contentHtml = isUser ? text : marked.parse(renderText);
             let userBg = isDarkMode ? "bg-[#18181C] text-neutral-100 border-[#2A2A32]" : "bg-neutral-100 text-neutral-900 border-neutral-200";
             let modelColor = isDarkMode ? "text-neutral-400" : "text-neutral-800";
             
@@ -348,7 +360,7 @@ HTML_UI = """
             
             let row = isUser ? 
                 `<div ${rowIdAttr} class="flex gap-4 items-start text-base self-end justify-end w-full max-w-xl ml-auto transition-all duration-300 rounded-lg"><div class="user-bubble border rounded-xl px-4 py-2.5 text-[14px] shadow-xs theme-transition ${userBg}">${contentHtml}</div></div>` :
-                `<div class="flex gap-4 items-start text-base border-t border-neutral-800/10 dark:border-neutral-200/40 pt-6"><div class="w-7 h-7 rounded-md bg-white dark:bg-neutral-950 flex items-center justify-center shrink-0 border border-neutral-800"><span class="text-[10px] text-black dark:text-white font-bold">CF</span></div><div class="space-y-1 flex-1 pt-0.5"><p class="font-bold text-[10px] tracking-widest uppercase text-neutral-500">ChatFusion</p><div class="model-text-container prose text-[14px] leading-relaxed theme-transition ${modelColor}">${contentHtml}</div></div></div>`;
+                `<div class="flex gap-4 items-start text-base border-t border-neutral-800/10 dark:border-neutral-200/40 pt-6"><div class="w-7 h-7 rounded-md bg-white dark:bg-neutral-950 flex items-center justify-center shrink-0 border border-neutral-800"><span class="text-[10px] text-black dark:text-white font-bold">AF</span></div><div class="space-y-1 flex-1 pt-0.5"><p class="font-bold text-[10px] tracking-widest uppercase text-neutral-500">ATOM-FLOW</p><div class="model-text-container prose text-[14px] leading-relaxed theme-transition ${modelColor}">${contentHtml}</div></div></div>`;
             
             feed.insertAdjacentHTML('beforeend', row);
             feed.scrollTop = feed.scrollHeight;
@@ -371,7 +383,7 @@ HTML_UI = """
             const blob = new Blob([currentPresentationHtml], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = 'ChatFusion-Presentation.html';
+            a.href = url; a.download = 'ATOM-FLOW-Presentation.html';
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
@@ -394,7 +406,9 @@ HTML_UI = """
             .then(res => res.json())
             .then(data => {
                 appendMessageRow(data.reply, false);
-                if (data.presentation_html) openPresentationWorkspace(data.presentation_html);
+                if (data.presentation_html) {
+                    openPresentationWorkspace(data.presentation_html);
+                }
             })
             .catch(() => appendMessageRow("System connection execution variant error.", false));
             removeAttachedFile();
@@ -509,7 +523,7 @@ async def chat_endpoint(request: ChatRequest):
     is_presentation_request = any(k in user_prompt.lower() for k in ["presentation", "slide deck", "slides"])
 
     system_instruction = (
-        "You are ChatFusion, a context-aware workspace assistant. Provide beautiful clear markdown responses.\n\n"
+        "You are ATOM-FLOW, a context-aware workspace assistant. Provide beautiful clear markdown responses.\n\n"
         "CRITICAL FOR PRESENTATIONS/SLIDES:\n"
         "If requested, provide the presentation block wrapped EXACTLY inside a ```slides custom block format. Use '---' to separate slides.\n"
         "Example:\n```slides\n# Slide One\n## Subtitle\n* Bullet point\n---\n# Slide Two\n```"
@@ -558,4 +572,4 @@ async def clear_context():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))t
